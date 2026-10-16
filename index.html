@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amortization Visualizer - Educational Loan Calculator</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f6ff',
+              100: '#e0edff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            },
+            interest: {
+              light: '#f87171',
+              DEFAULT: '#ef4444',
+              dark: '#dc2626'
+            },
+            principal: {
+              light: '#34d399',
+              DEFAULT: '#10b981',
+              dark: '#059669'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for table and containers */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    .gradient-border {
+      position: relative;
+      border-radius: 1rem;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(16, 185, 129, 0.3));
+      padding: 1px;
+    }
+    .gradient-border-inner {
+      background: #0f172a;
+      border-radius: calc(1rem - 1px);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col bg-slate-950 text-slate-100">
+
+  <!-- Header / Navigation -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-tr from-brand-600 to-emerald-500 p-2.5 rounded-xl shadow-lg shadow-brand-500/20">
+          <i class="fa-solid me-1 fa-calculator text-2xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            Amortization Visualizer
+            <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Classroom Edition</span>
+          </h1>
+          <p class="text-xs text-slate-400">Understanding how loan payments split between Interest & Principal over time</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <button onclick="toggleEducationalModal()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+          <i class="fa-solid fa-graduation-cap text-amber-400"></i> Key Concepts & Glossary
+        </button>
+        <button onclick="exportCSV()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition flex items-center gap-2">
+          <i class="fa-solid fa-file-csv"></i> Export Table (CSV)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+
+    <!-- Preset Selection Bar -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i class="fa-solid fa-bolt text-amber-400"></i> Select a Preset Scenario
+        </h2>
+        <span class="text-xs text-slate-500">Click to load pre-filled loan examples</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Preset 1: Auto -->
+        <button onclick="applyPreset('car')" id="preset-car" class="preset-card group relative p-4 rounded-xl bg-slate-900 border-2 border-slate-800 hover:border-brand-500/60 transition text-left cursor-pointer shadow-md overflow-hidden">
+          <div class="flex justify-between items-start mb-2">
+            <span class="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition">
+              <i class="fa-solid fa-car text-lg"></i>
+            </span>
+            <span class="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-slate-300">10 Years</span>
+          </div>
+          <h3 class="font-bold text-white text-base group-hover:text-brand-400 transition">Car Loan Example</h3>
+          <p class="text-xs text-slate-400 mt-1">$35,000 at 7.0% APR</p>
+          <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
+            <span class="text-slate-500">Short-term loan</span>
+            <span class="text-brand-400 font-semibold group-hover:translate-x-1 transition-transform">Load <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </button>
+
+        <!-- Preset 2: Student Loan -->
+        <button onclick="applyPreset('student')" id="preset-student" class="preset-card group relative p-4 rounded-xl bg-slate-900 border-2 border-slate-800 hover:border-brand-500/60 transition text-left cursor-pointer shadow-md overflow-hidden">
+          <div class="flex justify-between items-start mb-2">
+            <span class="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition">
+              <i class="fa-solid fa-user-graduate text-lg"></i>
+            </span>
+            <span class="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-slate-300">20 Years</span>
+          </div>
+          <h3 class="font-bold text-white text-base group-hover:text-brand-400 transition">College Loan Example</h3>
+          <p class="text-xs text-slate-400 mt-1">$50,000 at 6.5% APR</p>
+          <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
+            <span class="text-slate-500">Medium-term loan</span>
+            <span class="text-brand-400 font-semibold group-hover:translate-x-1 transition-transform">Load <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </button>
+
+        <!-- Preset 3: Home Mortgage -->
+        <button onclick="applyPreset('home')" id="preset-home" class="preset-card group relative p-4 rounded-xl bg-slate-900 border-2 border-slate-800 hover:border-brand-500/60 transition text-left cursor-pointer shadow-md overflow-hidden">
+          <div class="flex justify-between items-start mb-2">
+            <span class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition">
+              <i class="fa-solid fa-house text-lg"></i>
+            </span>
+            <span class="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-slate-300">30 Years</span>
+          </div>
+          <h3 class="font-bold text-white text-base group-hover:text-brand-400 transition">Home Mortgage Example</h3>
+          <p class="text-xs text-slate-400 mt-1">$350,000 at 6.8% APR</p>
+          <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
+            <span class="text-slate-500">Long-term loan</span>
+            <span class="text-brand-400 font-semibold group-hover:translate-x-1 transition-transform">Load <i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- Inputs & Key Stats Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Input Controls Column (4 cols) -->
+      <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div>
+          <h2 class="text-base font-bold text-white mb-4 pb-3 border-b border-slate-800 flex items-center justify-between">
+            <span><i class="fa-solid fa-sliders text-brand-400 me-2"></i>Loan Parameters</span>
+            <span class="text-xs font-normal text-slate-400">Customizable</span>
+          </h2>
+
+          <form id="loan-form" onsubmit="event.preventDefault(); calculateLoan();" class="space-y-4">
+            <!-- Loan Amount -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="loan-amount" class="text-xs font-semibold text-slate-300">Loan Amount ($)</label>
+                <span class="text-xs text-slate-400 font-mono" id="amount-display">$350,000</span>
+              </div>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">$</span>
+                <input type="number" id="loan-amount" value="350000" min="1000" max="2000000" step="1000" required
+                       class="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-sm">
+              </div>
+            </div>
+
+            <!-- Interest Rate APR -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="interest-rate" class="text-xs font-semibold text-slate-300">
+                  Annual Interest Rate (%)
+                  <i class="fa-solid fa-circle-info text-slate-500 cursor-pointer ml-1" title="The Annual Percentage Rate (APR) charged by the lender."></i>
+                </label>
+                <span class="text-xs text-slate-400 font-mono" id="rate-display">6.8%</span>
+              </div>
+              <div class="relative">
+                <input type="number" id="interest-rate" value="6.8" min="0.1" max="25" step="0.1" required
+                       class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-sm">
+                <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500">%</span>
+              </div>
+            </div>
+
+            <!-- Loan Term (Years) -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="loan-term" class="text-xs font-semibold text-slate-300">Loan Term (Years)</label>
+                <span class="text-xs text-slate-400 font-mono" id="term-display">30 Years</span>
+              </div>
+              <div class="grid grid-cols-4 gap-2 mb-2">
+                <button type="button" onclick="setTerm(5)" class="term-btn py-1 px-2 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700">5y</button>
+                <button type="button" onclick="setTerm(10)" class="term-btn py-1 px-2 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700">10y</button>
+                <button type="button" onclick="setTerm(20)" class="term-btn py-1 px-2 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700">20y</button>
+                <button type="button" onclick="setTerm(30)" class="term-btn py-1 px-2 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700">30y</button>
+              </div>
+              <input type="number" id="loan-term" value="30" min="1" max="50" step="1" required
+                     class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-sm">
+            </div>
+
+            <!-- Extra Monthly Payment -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="extra-payment" class="text-xs font-semibold text-slate-300">
+                  Extra Monthly Principal ($)
+                  <span class="text-emerald-400 text-[10px] uppercase font-bold ml-1">Experiment</span>
+                </label>
+              </div>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">$</span>
+                <input type="number" id="extra-payment" value="0" min="0" max="10000" step="50"
+                       class="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-sm" placeholder="0">
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">Add extra to see how fast interest drops!</p>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-lg shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 text-sm mt-2">
+              <i class="fa-solid fa-rotate text-xs"></i> Calculate Amortization
+            </button>
+          </form>
+        </div>
+
+        <!-- Quick Summary Stats Card -->
+        <div class="mt-6 pt-4 border-t border-slate-800 space-y-3">
+          <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+            <span class="text-xs text-slate-400 block mb-1">Required Monthly Payment</span>
+            <div class="text-2xl font-black text-white font-mono tracking-tight" id="stat-monthly-payment">$0.00</div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+              <span class="text-[11px] text-slate-400 block">Total Principal</span>
+              <span class="text-sm font-bold text-principal font-mono" id="stat-total-principal">$0</span>
+            </div>
+            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+              <span class="text-[11px] text-slate-400 block">Total Interest</span>
+              <span class="text-sm font-bold text-interest font-mono" id="stat-total-interest">$0</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Center & Right Column: Classroom Spotlight & Highlights (8 cols) -->
+      <div class="lg:col-span-8 flex flex-col gap-6">
+
+        <!-- EDUCATIONAL SPOTLIGHT CARD: First vs Last Payment Breakdown -->
+        <div class="gradient-border shadow-2xl">
+          <div class="gradient-border-inner p-5 sm:p-6">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-800">
+              <div>
+                <span class="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <i class="fa-solid fa-lightbulb"></i> Educational Spotlight
+                </span>
+                <h3 class="text-lg font-bold text-white">The Amortization Reality Check</h3>
+              </div>
+              <span class="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                Notice where your money actually goes!
+              </span>
+            </div>
+
+            <!-- Comparison Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-2">
+              
+              <!-- Month 1 Breakdown Card -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-red-500/10 text-red-400 border-l border-b border-red-500/20 text-[10px] font-bold uppercase px-2.5 py-1 rounded-bl-lg">
+                  First Payment (Month 1)
+                </div>
+                <h4 class="text-xs text-slate-400 font-medium mb-3">Payment #1 Breakdown</h4>
+                
+                <div class="flex items-baseline gap-2 mb-2">
+                  <span class="text-xl font-extrabold text-white font-mono" id="m1-total">$0</span>
+                  <span class="text-xs text-slate-500">monthly payment</span>
+                </div>
+
+                <!-- Visual Bar -->
+                <div class="h-4 w-full bg-slate-800 rounded-full overflow-hidden flex mb-3 p-0.5 border border-slate-700">
+                  <div id="m1-bar-interest" class="bg-interest transition-all duration-700 h-full rounded-l-full" style="width: 50%;"></div>
+                  <div id="m1-bar-principal" class="bg-principal transition-all duration-700 h-full rounded-r-full" style="width: 50%;"></div>
+                </div>
+
+                <div class="space-y-1.5 text-xs font-mono">
+                  <div class="flex justify-between items-center text-red-400 font-semibold">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-interest inline-block"></span>
+                      Interest (Lender Fee):
+                    </span>
+                    <span id="m1-interest-val">$0 (0%)</span>
+                  </div>
+                  <div class="flex justify-between items-center text-emerald-400 font-semibold">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-principal inline-block"></span>
+                      Principal (Loan Paydown):
+                    </span>
+                    <span id="m1-principal-val">$0 (0%)</span>
+                  </div>
+                </div>
+
+                <p class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-800/80 italic" id="m1-callout">
+                  In Month 1, most of your money goes straight into interest!
+                </p>
+              </div>
+
+              <!-- Final Month Breakdown Card -->
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-emerald-500/10 text-emerald-400 border-l border-b border-emerald-500/20 text-[10px] font-bold uppercase px-2.5 py-1 rounded-bl-lg">
+                  Final Payment (Month <span id="final-month-num">360</span>)
+                </div>
+                <h4 class="text-xs text-slate-400 font-medium mb-3">Final Payment Breakdown</h4>
+                
+                <div class="flex items-baseline gap-2 mb-2">
+                  <span class="text-xl font-extrabold text-white font-mono" id="mN-total">$0</span>
+                  <span class="text-xs text-slate-500">monthly payment</span>
+                </div>
+
+                <!-- Visual Bar -->
+                <div class="h-4 w-full bg-slate-800 rounded-full overflow-hidden flex mb-3 p-0.5 border border-slate-700">
+                  <div id="mN-bar-interest" class="bg-interest transition-all duration-700 h-full rounded-l-full" style="width: 5%;"></div>
+                  <div id="mN-bar-principal" class="bg-principal transition-all duration-700 h-full rounded-r-full" style="width: 95%;"></div>
+                </div>
+
+                <div class="space-y-1.5 text-xs font-mono">
+                  <div class="flex justify-between items-center text-red-400 font-semibold">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-interest inline-block"></span>
+                      Interest (Lender Fee):
+                    </span>
+                    <span id="mN-interest-val">$0 (0%)</span>
+                  </div>
+                  <div class="flex justify-between items-center text-emerald-400 font-semibold">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-principal inline-block"></span>
+                      Principal (Loan Paydown):
+                    </span>
+                    <span id="mN-principal-val">$0 (0%)</span>
+                  </div>
+                </div>
+
+                <p class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-800/80 italic" id="mN-callout">
+                  By the end, almost 100% of your payment pays off the debt itself!
+                </p>
+              </div>
+
+            </div>
+
+            <!-- Insight Milestone Callout -->
+            <div id="tipping-point-box" class="mt-4 p-3 bg-brand-500/10 border border-brand-500/20 rounded-xl flex items-center gap-3">
+              <i class="fa-solid fa-circle-check text-brand-400 text-lg flex-shrink-0"></i>
+              <p class="text-xs text-slate-300" id="tipping-point-text">
+                Calculating tipping point...
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Charts Dashboard Tabs & Containers -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col flex-1">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-area text-brand-400"></i> Amortization Charts
+            </h3>
+            
+            <!-- Chart Toggle Tabs -->
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+              <button onclick="switchChartTab('monthly')" id="tab-btn-monthly" class="px-3 py-1.5 rounded-md font-medium text-white bg-brand-600 transition">
+                Monthly Breakdown (Area)
+              </button>
+              <button onclick="switchChartTab('cumulative')" id="tab-btn-cumulative" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
+                Cumulative Growth (Bar)
+              </button>
+              <button onclick="switchChartTab('donut')" id="tab-btn-donut" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
+                Total Share (Donut)
+              </button>
+            </div>
+          </div>
+
+          <!-- Chart Area -->
+          <div class="relative flex-1 min-h-[300px] w-full flex items-center justify-center">
+            
+            <!-- Chart 1: Monthly Breakdown Area Chart -->
+            <div id="chart-container-monthly" class="w-full h-[320px]">
+              <canvas id="monthlyChart"></canvas>
+            </div>
+
+            <!-- Chart 2: Cumulative Stacked Bar Chart -->
+            <div id="chart-container-cumulative" class="w-full h-[320px] hidden">
+              <canvas id="cumulativeChart"></canvas>
+            </div>
+
+            <!-- Chart 3: Total Cost Donut Chart -->
+            <div id="chart-container-donut" class="w-full h-[320px] hidden max-w-md mx-auto">
+              <canvas id="donutChart"></canvas>
+            </div>
+
+          </div>
+          
+          <div class="mt-3 text-center text-xs text-slate-500">
+            <i class="fa-solid fa-hand-pointer text-slate-600 me-1"></i> Hover or tap chart data points to see precise dollar balances per month or year.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Amortization Schedule Table Section -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5 pb-4 border-b border-slate-800">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-table text-emerald-400"></i> Complete Amortization Schedule
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Explore monthly payment breakdowns year-by-year</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <!-- View Toggle: Annual vs Monthly -->
+          <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+            <button onclick="setTableViewMode('yearly')" id="table-mode-yearly" class="px-3 py-1.5 rounded-md font-medium text-white bg-slate-800 transition">
+              Group by Year
+            </button>
+            <button onclick="setTableViewMode('monthly')" id="table-mode-monthly" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
+              All Months
+            </button>
+          </div>
+
+          <!-- Table Search / Filter -->
+          <div class="relative flex-1 md:w-48">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+            <input type="text" id="table-search" placeholder="Search month or year..." oninput="filterTable()" 
+                   class="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Wrapper -->
+      <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-xl border border-slate-800 relative">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-950 text-slate-400 font-semibold sticky top-0 z-10 shadow-sm">
+            <tr>
+              <th class="py-3 px-4 border-b border-slate-800">Period</th>
+              <th class="py-3 px-4 border-b border-slate-800 text-right">Payment</th>
+              <th class="py-3 px-4 border-b border-slate-800 text-right text-emerald-400">Principal</th>
+              <th class="py-3 px-4 border-b border-slate-800 text-right text-red-400">Interest</th>
+              <th class="py-3 px-4 border-b border-slate-800 text-right">Total Interest Paid</th>
+              <th class="py-3 px-4 border-b border-slate-800 text-right">Remaining Balance</th>
+              <th class="py-3 px-4 border-b border-slate-800 text-center">Loan Progress</th>
+            </tr>
+          </thead>
+          <tbody id="amortization-table-body" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+            <!-- Dynamically Populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Educational Glossary Modal -->
+  <div id="educational-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button onclick="toggleEducationalModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4 text-amber-400">
+        <i class="fa-solid fa-graduation-cap text-2xl"></i>
+        <h3 class="text-xl font-bold text-white">Understanding Amortization</h3>
+      </div>
+
+      <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <h4 class="font-bold text-brand-400 mb-1"><i class="fa-solid fa-book-open me-1"></i> What is Amortization?</h4>
+          <p class="text-xs text-slate-400">
+            Amortization is the process of spreading out a loan into a series of equal payments over time. Even though your total monthly payment stays identical month after month, the portion going toward interest vs. loan principal changes dramatically over the lifetime of the loan.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+            <span class="font-bold text-emerald-400 block mb-1">Principal</span>
+            The actual money you borrowed. Paying principal reduces your outstanding loan balance.
+          </div>
+          <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+            <span class="font-bold text-red-400 block mb-1">Interest</span>
+            The fee charged by the lender for letting you borrow their money. It is calculated based on your remaining loan balance each month.
+          </div>
+          <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+            <span class="font-bold text-amber-400 block mb-1">APR (Annual Percentage Rate)</span>
+            The annual interest rate charged for borrowing, expressed as a single percentage rate per year.
+          </div>
+          <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+            <span class="font-bold text-purple-400 block mb-1">Why is early interest so high?</span>
+            Because interest is calculated on the remaining debt balance. Early in the loan, your balance is huge, so the interest charge is huge!
+          </div>
+        </div>
+
+        <div class="p-4 bg-brand-500/10 border border-brand-500/20 rounded-xl text-xs text-slate-300">
+          <span class="font-bold text-brand-400 block mb-1"><i class="fa-solid fa-lightbulb me-1"></i> Classroom Key Takeaway:</span>
+          When taking out long-term debt (like a 30-year home mortgage), you often pay more in total interest than the original loan amount itself during the first 15 years! Making extra payments early directly attacks the principal, drastically slashing total interest paid.
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-800 text-right">
+        <button onclick="toggleEducationalModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold">
+          Got It! Back to Visualizer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-slate-950 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>Amortization Educational Tool — Designed for Interactive Student Learning</p>
+      <p class="text-slate-600">Built with Chart.js & Tailwind CSS</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // Global State
+    let loanData = {
+      schedule: [],
+      yearlySchedule: [],
+      summary: {}
+    };
+
+    let monthlyChartInstance = null;
+    let cumulativeChartInstance = null;
+    let donutChartInstance = null;
+
+    let currentChartTab = 'monthly'; // 'monthly', 'cumulative', 'donut'
+    let currentTableMode = 'yearly'; // 'yearly', 'monthly'
+
+    // Preset Configurations
+    const presets = {
+      car: { amount: 35000, rate: 7.0, term: 10, extra: 0 },
+      student: { amount: 50000, rate: 6.5, term: 20, extra: 0 },
+      home: { amount: 350000, rate: 6.8, term: 30, extra: 0 }
+    };
+
+    // Initialize application on DOM Load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Default load Home Mortgage preset for max educational impact
+      applyPreset('home');
+    });
+
+    function setTerm(years) {
+      document.getElementById('loan-term').value = years;
+      calculateLoan();
+    }
+
+    function applyPreset(presetKey) {
+      const p = presets[presetKey];
+      if (!p) return;
+
+      document.getElementById('loan-amount').value = p.amount;
+      document.getElementById('interest-rate').value = p.rate;
+      document.getElementById('loan-term').value = p.term;
+      document.getElementById('extra-payment').value = p.extra;
+
+      // Update preset active UI states
+      document.querySelectorAll('.preset-card').forEach(card => {
+        card.classList.remove('border-brand-500', 'bg-slate-800/80');
+        card.classList.add('border-slate-800', 'bg-slate-900');
+      });
+      const activeCard = document.getElementById(`preset-${presetKey}`);
+      if (activeCard) {
+        activeCard.classList.remove('border-slate-800', 'bg-slate-900');
+        activeCard.classList.add('border-brand-500', 'bg-slate-800/80');
+      }
+
+      calculateLoan();
+    }
+
+    function formatCurrency(val) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(val);
+    }
+
+    function formatCurrencyCompact(val) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(val);
+    }
+
+    // Main Loan Calculation Engine
+    function calculateLoan() {
+      const principal = parseFloat(document.getElementById('loan-amount').value) || 0;
+      const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+      const termYears = parseInt(document.getElementById('loan-term').value) || 0;
+      const extraPayment = parseFloat(document.getElementById('extra-payment').value) || 0;
+
+      // Update Label Displays
+      document.getElementById('amount-display').textContent = formatCurrency(principal);
+      document.getElementById('rate-display').textContent = `${annualRate}%`;
+      document.getElementById('term-display').textContent = `${termYears} Years`;
+
+      const monthlyRate = annualRate / 100 / 12;
+      const totalMonths = termYears * 12;
+
+      // Standard Fixed Monthly Payment Formula: M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]
+      let standardMonthlyPayment = 0;
+      if (monthlyRate > 0) {
+        standardMonthlyPayment = (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+      } else {
+        standardMonthlyPayment = principal / totalMonths;
+      }
+
+      const schedule = [];
+      let balance = principal;
+      let totalInterestPaid = 0;
+      let month = 0;
+
+      let crossoverMonth = -1; // Month where Principal paid > Interest paid
+
+      while (balance > 0.01 && month < totalMonths + 120) { // Safety ceiling
+        month++;
+        const interestPaid = balance * monthlyRate;
+        let basePrincipalPaid = standardMonthlyPayment - interestPaid;
+        
+        if (basePrincipalPaid < 0) basePrincipalPaid = 0;
+
+        let totalPrincipalThisMonth = basePrincipalPaid + extraPayment;
+
+        // Final month cap
+        if (totalPrincipalThisMonth > balance) {
+          totalPrincipalThisMonth = balance;
+        }
+
+        const actualMonthlyPayment = interestPaid + totalPrincipalThisMonth;
+        balance -= totalPrincipalThisMonth;
+        if (balance < 0) balance = 0;
+
+        totalInterestPaid += interestPaid;
+
+        if (crossoverMonth === -1 && totalPrincipalThisMonth > interestPaid) {
+          crossoverMonth = month;
+        }
+
+        schedule.push({
+          month: month,
+          year: Math.ceil(month / 12),
+          payment: actualMonthlyPayment,
+          principalPaid: totalPrincipalThisMonth,
+          interestPaid: interestPaid,
+          totalInterestPaid: totalInterestPaid,
+          remainingBalance: balance,
+          progressPct: Math.min(100, ((principal - balance) / principal) * 100)
+        });
+
+        if (balance <= 0) break;
+      }
+
+      // Aggregate Yearly Data for simplified view & bar charts
+      const yearlySchedule = [];
+      let currentYear = 1;
+      let yearInterest = 0;
+      let yearPrincipal = 0;
+      let yearEndBalance = principal;
+
+      schedule.forEach((row, idx) => {
+        yearInterest += row.interestPaid;
+        yearPrincipal += row.principalPaid;
+        yearEndBalance = row.remainingBalance;
+
+        if (row.month % 12 === 0 || idx === schedule.length - 1) {
+          yearlySchedule.push({
+            year: currentYear,
+            interestPaid: yearInterest,
+            principalPaid: yearPrincipal,
+            totalPayment: yearInterest + yearPrincipal,
+            remainingBalance: yearEndBalance,
+            totalInterestToDate: row.totalInterestPaid,
+            progressPct: row.progressPct
+          });
+          currentYear++;
+          yearInterest = 0;
+          yearPrincipal = 0;
+        }
+      });
+
+      loanData = {
+        principal,
+        annualRate,
+        termYears,
+        monthlyPayment: standardMonthlyPayment,
+        actualTotalMonths: schedule.length,
+        totalInterestPaid,
+        totalPaid: principal + totalInterestPaid,
+        crossoverMonth,
+        schedule,
+        yearlySchedule
+      };
+
+      // Update UI Components
+      updateSummaryUI();
+      updateEducationalSpotlight();
+      renderCharts();
+      renderTable();
+    }
+
+    // Update Top Summary Stats
+    function updateSummaryUI() {
+      document.getElementById('stat-monthly-payment').textContent = formatCurrency(loanData.monthlyPayment);
+      document.getElementById('stat-total-principal').textContent = formatCurrency(loanData.principal);
+      document.getElementById('stat-total-interest').textContent = formatCurrency(loanData.totalInterestPaid);
+    }
+
+    // Educational Spotlight: First Payment vs Last Payment Comparison
+    function updateEducationalSpotlight() {
+      if (!loanData.schedule.length) return;
+
+      const m1 = loanData.schedule[0];
+      const mN = loanData.schedule[loanData.schedule.length - 1];
+
+      // Month 1 calculations
+      const m1InterestPct = (m1.interestPaid / m1.payment) * 100;
+      const m1PrincipalPct = (m1.principalPaid / m1.payment) * 100;
+
+      document.getElementById('m1-total').textContent = formatCurrency(m1.payment);
+      document.getElementById('m1-interest-val').textContent = `${formatCurrency(m1.interestPaid)} (${m1InterestPct.toFixed(1)}%)`;
+      document.getElementById('m1-principal-val').textContent = `${formatCurrency(m1.principalPaid)} (${m1PrincipalPct.toFixed(1)}%)`;
+      document.getElementById('m1-bar-interest').style.width = `${m1InterestPct}%`;
+      document.getElementById('m1-bar-principal').style.width = `${m1PrincipalPct}%`;
+
+      document.getElementById('m1-callout').innerHTML = m1InterestPct > 50
+        ? `<i class="fa-solid fa-triangle-exclamation text-amber-400 me-1"></i> <strong>Over half (${m1InterestPct.toFixed(0)}%)</strong> of your very first payment is lost pure interest!`
+        : `Even in Month 1, interest claims ${m1InterestPct.toFixed(0)}% of your payment amount.`;
+
+      // Month N calculations
+      const mNInterestPct = (mN.interestPaid / mN.payment) * 100;
+      const mNPrincipalPct = (mN.principalPaid / mN.payment) * 100;
+
+      document.getElementById('final-month-num').textContent = loanData.actualTotalMonths;
+      document.getElementById('mN-total').textContent = formatCurrency(mN.payment);
+      document.getElementById('mN-interest-val').textContent = `${formatCurrency(mN.interestPaid)} (${mNInterestPct.toFixed(1)}%)`;
+      document.getElementById('mN-principal-val').textContent = `${formatCurrency(mN.principalPaid)} (${mNPrincipalPct.toFixed(1)}%)`;
+      document.getElementById('mN-bar-interest').style.width = `${mNInterestPct}%`;
+      document.getElementById('mN-bar-principal').style.width = `${mNPrincipalPct}%`;
+
+      document.getElementById('mN-callout').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 me-1"></i> By payment #${loanData.actualTotalMonths}, <strong>${mNPrincipalPct.toFixed(0)}%</strong> of your money pays down debt!`;
+
+      // Dynamic Tipping Point Text
+      const tippingBox = document.getElementById('tipping-point-text');
+      if (loanData.crossoverMonth > 0) {
+        const crossoverYear = Math.ceil(loanData.crossoverMonth / 12);
+        tippingBox.innerHTML = `<strong>Classroom Insight:</strong> The "Tipping Point" occurs at <strong>Month ${loanData.crossoverMonth} (Year ${crossoverYear})</strong>. This is the exact month when your payment flips from paying mostly interest to paying mostly principal!`;
+      } else {
+        tippingBox.innerHTML = `<strong>Classroom Insight:</strong> Principal payments exceed interest right from the start due to a high payment or short loan term!`;
+      }
+    }
+
+    // Render Chart.js Visualizations
+    function renderCharts() {
+      renderMonthlyChart();
+      renderCumulativeChart();
+      renderDonutChart();
+    }
+
+    function switchChartTab(tab) {
+      currentChartTab = tab;
+      
+      // Update Tab UI
+      ['monthly', 'cumulative', 'donut'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const container = document.getElementById(`chart-container-${t}`);
+        if (t === tab) {
+          btn.className = 'px-3 py-1.5 rounded-md font-medium text-white bg-brand-600 transition';
+          container.classList.remove('hidden');
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition';
+          container.classList.add('hidden');
+        }
+      });
+    }
+
+    function renderMonthlyChart() {
+      const ctx = document.getElementById('monthlyChart').getContext('2d');
+      
+      // Downsample for chart performance if long duration
+      const step = loanData.schedule.length > 180 ? 3 : 1;
+      const filteredSchedule = loanData.schedule.filter((_, idx) => idx % step === 0);
+
+      const labels = filteredSchedule.map(s => `Mo ${s.month}`);
+      const interestData = filteredSchedule.map(s => s.interestPaid);
+      const principalData = filteredSchedule.map(s => s.principalPaid);
+
+      if (monthlyChartInstance) monthlyChartInstance.destroy();
+
+      monthlyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Interest Paid ($)',
+              data: interestData,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.35)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Principal Paid ($)',
+              data: principalData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.35)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw)}`
+              }
+            },
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } }
+          },
+          scales: {
+            x: { ticks: { color: '#64748b', maxTicksLimit: 12 }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+            y: { ticks: { color: '#64748b', callback: (val) => '$' + val }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+          }
+        }
+      });
+    }
+
+    function renderCumulativeChart() {
+      const ctx = document.getElementById('cumulativeChart').getContext('2d');
+      
+      const labels = loanData.yearlySchedule.map(y => `Year ${y.year}`);
+      const interestData = loanData.yearlySchedule.map(y => y.interestPaid);
+      const principalData = loanData.yearlySchedule.map(y => y.principalPaid);
+
+      if (cumulativeChartInstance) cumulativeChartInstance.destroy();
+
+      cumulativeChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Yearly Principal Paid',
+              data: principalData,
+              backgroundColor: '#10b981',
+              borderRadius: 4
+            },
+            {
+              label: 'Yearly Interest Paid',
+              data: interestData,
+              backgroundColor: '#ef4444',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, ticks: { color: '#64748b' }, grid: { display: false } },
+            y: { stacked: true, ticks: { color: '#64748b', callback: (val) => '$' + val }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (context) => `${context.dataset.label}: ${formatCurrency(context.raw)}`
+              }
+            },
+            legend: { labels: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    function renderDonutChart() {
+      const ctx = document.getElementById('donutChart').getContext('2d');
+
+      if (donutChartInstance) donutChartInstance.destroy();
+
+      donutChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Original Principal', 'Total Interest Paid'],
+          datasets: [{
+            data: [loanData.principal, loanData.totalInterestPaid],
+            backgroundColor: ['#10b981', '#ef4444'],
+            borderWidth: 2,
+            borderColor: '#0f172a'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter' } } },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const val = context.raw;
+                  const pct = ((val / loanData.totalPaid) * 100).toFixed(1);
+                  return ` ${context.label}: ${formatCurrency(val)} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Render Amortization Table
+    function setTableViewMode(mode) {
+      currentTableMode = mode;
+      document.getElementById('table-mode-yearly').className = mode === 'yearly' 
+        ? 'px-3 py-1.5 rounded-md font-medium text-white bg-slate-800 transition'
+        : 'px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition';
+      document.getElementById('table-mode-monthly').className = mode === 'monthly'
+        ? 'px-3 py-1.5 rounded-md font-medium text-white bg-slate-800 transition'
+        : 'px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition';
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('amortization-table-body');
+      tbody.innerHTML = '';
+
+      const query = document.getElementById('table-search').value.toLowerCase().trim();
+
+      if (currentTableMode === 'yearly') {
+        loanData.yearlySchedule.forEach((row) => {
+          if (query && !`year ${row.year}`.toLowerCase().includes(query)) return;
+
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-800/50 transition border-b border-slate-800/40';
+          tr.innerHTML = `
+            <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-brand-400"></span> Year ${row.year}
+            </td>
+            <td class="py-3 px-4 text-right">${formatCurrency(row.totalPayment)}</td>
+            <td class="py-3 px-4 text-right text-emerald-400 font-medium">${formatCurrency(row.principalPaid)}</td>
+            <td class="py-3 px-4 text-right text-red-400 font-medium">${formatCurrency(row.interestPaid)}</td>
+            <td class="py-3 px-4 text-right text-slate-400">${formatCurrency(row.totalInterestToDate)}</td>
+            <td class="py-3 px-4 text-right font-bold text-white">${formatCurrency(row.remainingBalance)}</td>
+            <td class="py-3 px-4 text-center">
+              <div class="w-20 bg-slate-800 h-2 rounded-full mx-auto overflow-hidden">
+                <div class="bg-emerald-500 h-full" style="width: ${row.progressPct}%"></div>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } else {
+        loanData.schedule.forEach((row) => {
+          if (query && !`month ${row.month}`.toLowerCase().includes(query) && !`year ${row.year}`.toLowerCase().includes(query)) return;
+
+          const tr = document.createElement('tr');
+          const isTippingPoint = row.month === loanData.crossoverMonth;
+          
+          tr.className = isTippingPoint 
+            ? 'bg-brand-500/10 hover:bg-brand-500/20 border-l-4 border-l-brand-400 border-b border-slate-800/40' 
+            : 'hover:bg-slate-800/50 transition border-b border-slate-800/40';
+
+          tr.innerHTML = `
+            <td class="py-2.5 px-4 font-medium text-slate-300">
+              Month ${row.month} <span class="text-[10px] text-slate-500 ml-1">(Yr ${row.year})</span>
+              ${isTippingPoint ? '<span class="ml-2 text-[10px] bg-brand-500 text-white px-1.5 py-0.5 rounded font-sans font-bold">Tipping Point</span>' : ''}
+            </td>
+            <td class="py-2.5 px-4 text-right">${formatCurrency(row.payment)}</td>
+            <td class="py-2.5 px-4 text-right text-emerald-400">${formatCurrency(row.principalPaid)}</td>
+            <td class="py-2.5 px-4 text-right text-red-400">${formatCurrency(row.interestPaid)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-400">${formatCurrency(row.totalInterestPaid)}</td>
+            <td class="py-2.5 px-4 text-right text-white">${formatCurrency(row.remainingBalance)}</td>
+            <td class="py-2.5 px-4 text-center">
+              <span class="text-[11px] text-slate-400">${row.progressPct.toFixed(0)}%</span>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function filterTable() {
+      renderTable();
+    }
+
+    // Modal Control
+    function toggleEducationalModal() {
+      const modal = document.getElementById('educational-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    // Export Table as CSV
+    function exportCSV() {
+      if (!loanData.schedule.length) return;
+
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Month,Year,Payment Amount,Principal Paid,Interest Paid,Total Interest Paid,Remaining Balance\n";
+
+      loanData.schedule.forEach(r => {
+        csvContent += `${r.month},${r.year},${r.payment.toFixed(2)},${r.principalPaid.toFixed(2)},${r.interestPaid.toFixed(2)},${r.totalInterestPaid.toFixed(2)},${r.remainingBalance.toFixed(2)}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Amortization_Schedule_${loanData.termYears}Y_${loanData.annualRate}pct.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
