@@ -511,4 +511,524 @@
         </div>
 
         <div class="p-4 bg-brand-500/10 border border-brand-500/20 rounded-xl text-xs text-slate-300">
-          <span class="font-
+          <span class="font-bold text-brand-400 block mb-1"><i class="fa-solid fa-lightbulb me-1"></i> Classroom Key Takeaway:</span>
+          When taking out long-term debt (like a 30-year home mortgage), you often pay more in total interest than the original loan amount itself during the first 15 years! Making extra payments early directly attacks the principal, drastically slashing total interest paid.
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-800 text-right">
+        <button onclick="toggleEducationalModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold">
+          Got It! Back to Visualizer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-slate-950 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>Amortization Educational Tool — Designed for Interactive Student Learning</p>
+      <p class="text-slate-600">Built with Chart.js & Tailwind CSS</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // Global State
+    let loanData = {
+      schedule: [],
+      yearlySchedule: [],
+      summary: {},
+      baseSummary: {}
+    };
+
+    let monthlyChartInstance = null;
+    let cumulativeChartInstance = null;
+    let donutChartInstance = null;
+
+    let currentChartTab = 'monthly';
+    let currentTableMode = 'yearly';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Input event listeners for live dynamic syncing
+      const loanInput = document.getElementById('loan-amount');
+      const rangeInput = document.getElementById('loan-amount-range');
+
+      loanInput.addEventListener('input', (e) => {
+        let val = parseFloat(e.target.value) || 0;
+        if (val <= 1000000) {
+          rangeInput.value = val;
+        }
+        calculateLoan();
+      });
+
+      rangeInput.addEventListener('input', (e) => {
+        loanInput.value = e.target.value;
+        calculateLoan();
+      });
+
+      document.getElementById('interest-rate').addEventListener('input', calculateLoan);
+      document.getElementById('loan-term').addEventListener('input', calculateLoan);
+      document.getElementById('extra-payment').addEventListener('input', calculateLoan);
+      document.getElementById('lump-sum-amount').addEventListener('input', calculateLoan);
+      document.getElementById('lump-sum-month').addEventListener('input', calculateLoan);
+
+      calculateLoan();
+    });
+
+    function setTerm(years) {
+      document.getElementById('loan-term').value = years;
+      calculateLoan();
+    }
+
+    function calculateLoan() {
+      const principal = parseFloat(document.getElementById('loan-amount').value) || 0;
+      const annualRate = parseFloat(document.getElementById('interest-rate').value) || 0;
+      const years = parseInt(document.getElementById('loan-term').value) || 0;
+      const extraMonthly = parseFloat(document.getElementById('extra-payment').value) || 0;
+      const lumpSum = parseFloat(document.getElementById('lump-sum-amount').value) || 0;
+      const lumpSumMonth = parseInt(document.getElementById('lump-sum-month').value) || 0;
+      const scheduleType = document.querySelector('input[name="payment-schedule"]:checked').value;
+
+      if (principal <= 0 || annualRate <= 0 || years <= 0) return;
+
+      // Format displays
+      document.getElementById('amount-display').innerText = formatCurrency(principal);
+      document.getElementById('rate-display').innerText = annualRate.toFixed(2) + '%';
+      document.getElementById('term-display').innerText = years + ' Years';
+
+      // 1. Compute Base Loan (without extra payments) for comparison
+      const baseMonthlyRate = (annualRate / 100) / 12;
+      const baseTotalMonths = years * 12;
+      const baseMonthlyPayment = (principal * baseMonthlyRate * Math.pow(1 + baseMonthlyRate, baseTotalMonths)) / 
+                                 (Math.pow(1 + baseMonthlyRate, baseTotalMonths) - 1);
+
+      let baseTempBalance = principal;
+      let baseTotalInterest = 0;
+      for (let m = 1; m <= baseTotalMonths; m++) {
+        let interest = baseTempBalance * baseMonthlyRate;
+        let principalPaid = baseMonthlyPayment - interest;
+        baseTotalInterest += interest;
+        baseTempBalance -= principalPaid;
+      }
+
+      // 2. Compute Active Schedule
+      let schedule = [];
+      let yearlySchedule = [];
+      let balance = principal;
+      let totalInterestPaid = 0;
+      let cumulativePrincipalPaid = 0;
+      let tippingPointMonth = null;
+
+      // Adjust monthly equivalent if biweekly selected
+      let regularMonthlyPayment = baseMonthlyPayment;
+      let monthlyContribution = regularMonthlyPayment;
+      
+      if (scheduleType === 'biweekly') {
+        // Bi-weekly pays 26 half-payments per year = 13 monthly payments annually
+        monthlyContribution = (regularMonthlyPayment * 13) / 12;
+      }
+
+      let month = 1;
+      let maxAllowedMonths = years * 12;
+
+      while (balance > 0.01 && month <= maxAllowedMonths * 2) {
+        let monthlyRate = (annualRate / 100) / 12;
+        let interestPayment = balance * monthlyRate;
+
+        if (interestPayment > monthlyContribution + extraMonthly && month === 1) {
+          alert("Payment is too low to cover monthly interest. Please increase loan term or lower interest rate.");
+          return;
+        }
+
+        let totalPaymentThisMonth = monthlyContribution + extraMonthly;
+
+        // Apply One-Time Lump Sum
+        if (month === lumpSumMonth && lumpSum > 0) {
+          totalPaymentThisMonth += lumpSum;
+        }
+
+        let principalPayment = totalPaymentThisMonth - interestPayment;
+
+        // Handle final payment edge case
+        if (principalPayment >= balance) {
+          principalPayment = balance;
+          totalPaymentThisMonth = principalPayment + interestPayment;
+          balance = 0;
+        } else {
+          balance -= principalPayment;
+        }
+
+        totalInterestPaid += interestPayment;
+        cumulativePrincipalPaid += principalPayment;
+
+        if (!tippingPointMonth && principalPayment > interestPayment) {
+          tippingPointMonth = month;
+        }
+
+        schedule.push({
+          month: month,
+          year: Math.ceil(month / 12),
+          payment: totalPaymentThisMonth,
+          principal: principalPayment,
+          interest: interestPayment,
+          totalInterest: totalInterestPaid,
+          balance: Math.max(0, balance),
+          progressPercent: ((principal - Math.max(0, balance)) / principal) * 100
+        });
+
+        if (balance <= 0) break;
+        month++;
+      }
+
+      // 3. Aggregate Yearly Data
+      let currentYear = 1;
+      let yearPrincipal = 0;
+      let yearInterest = 0;
+      let yearPayment = 0;
+
+      schedule.forEach((item, idx) => {
+        yearPrincipal += item.principal;
+        yearInterest += item.interest;
+        yearPayment += item.payment;
+
+        if (item.month % 12 === 0 || idx === schedule.length - 1) {
+          yearlySchedule.push({
+            year: currentYear,
+            payment: yearPayment,
+            principal: yearPrincipal,
+            interest: yearInterest,
+            totalInterest: item.totalInterest,
+            balance: item.balance,
+            progressPercent: item.progressPercent
+          });
+          currentYear++;
+          yearPrincipal = 0;
+          yearInterest = 0;
+          yearPayment = 0;
+        }
+      });
+
+      loanData = {
+        schedule: schedule,
+        yearlySchedule: yearlySchedule,
+        summary: {
+          monthlyPayment: baseMonthlyPayment,
+          actualMonthlyContribution: monthlyContribution + extraMonthly,
+          totalPrincipal: principal,
+          totalInterest: totalInterestPaid,
+          totalCost: principal + totalInterestPaid,
+          totalMonths: schedule.length,
+          tippingPointMonth: tippingPointMonth
+        },
+        baseSummary: {
+          totalInterest: baseTotalInterest,
+          totalMonths: baseTotalMonths
+        }
+      };
+
+      updateUI();
+    }
+
+    function updateUI() {
+      const summary = loanData.summary;
+      const baseSummary = loanData.baseSummary;
+      const m1 = loanData.schedule[0];
+      const mN = loanData.schedule[loanData.schedule.length - 1];
+
+      // Update Summary Cards
+      document.getElementById('stat-monthly-payment').innerText = formatCurrency(summary.monthlyPayment);
+      document.getElementById('stat-total-principal').innerText = formatCurrency(summary.totalPrincipal);
+      document.getElementById('stat-total-interest').innerText = formatCurrency(summary.totalInterest);
+
+      // First Month Spotlight
+      const m1InterestPct = ((m1.interest / m1.payment) * 100).toFixed(1);
+      const m1PrincipalPct = ((m1.principal / m1.payment) * 100).toFixed(1);
+      
+      document.getElementById('m1-total').innerText = formatCurrency(m1.payment);
+      document.getElementById('m1-interest-val').innerText = `${formatCurrency(m1.interest)} (${m1InterestPct}%)`;
+      document.getElementById('m1-principal-val').innerText = `${formatCurrency(m1.principal)} (${m1PrincipalPct}%)`;
+      document.getElementById('m1-bar-interest').style.width = `${m1InterestPct}%`;
+      document.getElementById('m1-bar-principal').style.width = `${m1PrincipalPct}%`;
+
+      document.getElementById('m1-callout').innerText = m1.interest > m1.principal 
+        ? `In Month 1, ${m1InterestPct}% of your payment goes straight to interest fees!`
+        : `In Month 1, you pay ${m1PrincipalPct}% toward principal.`;
+
+      // Final Month Spotlight
+      const mNInterestPct = ((mN.interest / mN.payment) * 100).toFixed(1);
+      const mNPrincipalPct = ((mN.principal / mN.payment) * 100).toFixed(1);
+
+      document.getElementById('final-month-num').innerText = loanData.schedule.length;
+      document.getElementById('mN-total').innerText = formatCurrency(mN.payment);
+      document.getElementById('mN-interest-val').innerText = `${formatCurrency(mN.interest)} (${mNInterestPct}%)`;
+      document.getElementById('mN-principal-val').innerText = `${formatCurrency(mN.principal)} (${mNPrincipalPct}%)`;
+      document.getElementById('mN-bar-interest').style.width = `${mNInterestPct}%`;
+      document.getElementById('mN-bar-principal').style.width = `${mNPrincipalPct}%`;
+
+      // Strategy Savings Callout
+      const interestSaved = baseSummary.totalInterest - summary.totalInterest;
+      const monthsSaved = baseSummary.totalMonths - summary.totalMonths;
+      const savingsBox = document.getElementById('strategy-savings-box');
+
+      if (interestSaved > 10 || monthsSaved > 0) {
+        savingsBox.classList.remove('hidden');
+        savingsBox.classList.add('flex');
+        const yrsSaved = (monthsSaved / 12).toFixed(1);
+        document.getElementById('strategy-savings-text').innerHTML = 
+          `By using this payment strategy, you save <strong>${formatCurrency(interestSaved)}</strong> in interest and pay off your loan <strong>${monthsSaved} months (${yrsSaved} years)</strong> early!`;
+      } else {
+        savingsBox.classList.add('hidden');
+        savingsBox.classList.remove('flex');
+      }
+
+      // Tipping Point Box
+      const tipBox = document.getElementById('tipping-point-text');
+      if (summary.tippingPointMonth) {
+        const tipYear = Math.ceil(summary.tippingPointMonth / 12);
+        const tipMonthInYr = (summary.tippingPointMonth - 1) % 12 + 1;
+        tipBox.innerHTML = `<strong>Tipping Point Milestone:</strong> In <strong>Month ${summary.tippingPointMonth} (Year ${tipYear}, Month ${tipMonthInYr})</strong>, your payment flips to paying more toward Principal than Interest!`;
+      } else {
+        tipBox.innerHTML = `<strong>Loan Structure:</strong> Interest payments remain higher than principal payments for the duration of this setup.`;
+      }
+
+      renderCharts();
+      renderTable();
+    }
+
+    function renderCharts() {
+      const schedule = loanData.schedule;
+      const yearly = loanData.yearlySchedule;
+
+      // Sample data for monthly chart performance
+      const step = Math.max(1, Math.floor(schedule.length / 60));
+      const sampledSchedule = schedule.filter((item, index) => index % step === 0 || index === schedule.length - 1);
+
+      const labelsMonthly = sampledSchedule.map(i => `Mo ${i.month}`);
+      const interestMonthly = sampledSchedule.map(i => i.interest);
+      const principalMonthly = sampledSchedule.map(i => i.principal);
+
+      // 1. Monthly Stacked Area Chart
+      if (monthlyChartInstance) monthlyChartInstance.destroy();
+      const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+      monthlyChartInstance = new Chart(ctxMonthly, {
+        type: 'line',
+        data: {
+          labels: labelsMonthly,
+          datasets: [
+            {
+              label: 'Interest Payment ($)',
+              data: interestMonthly,
+              backgroundColor: 'rgba(239, 68, 68, 0.4)',
+              borderColor: '#ef4444',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Principal Payment ($)',
+              data: principalMonthly,
+              backgroundColor: 'rgba(16, 185, 129, 0.4)',
+              borderColor: '#10b981',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', maxTicksLimit: 12 } },
+            y: { 
+              grid: { color: '#334155' }, 
+              ticks: { 
+                color: '#94a3b8',
+                callback: (val) => '$' + val.toLocaleString()
+              } 
+            }
+          }
+        }
+      });
+
+      // 2. Cumulative Growth Chart
+      const labelsYearly = yearly.map(i => `Year ${i.year}`);
+      const interestYearly = yearly.map(i => i.totalInterest);
+      const principalYearly = yearly.map(i => loanData.summary.totalPrincipal - i.balance);
+
+      if (cumulativeChartInstance) cumulativeChartInstance.destroy();
+      const ctxCumulative = document.getElementById('cumulativeChart').getContext('2d');
+      cumulativeChartInstance = new Chart(ctxCumulative, {
+        type: 'bar',
+        data: {
+          labels: labelsYearly,
+          datasets: [
+            {
+              label: 'Cumulative Principal Paid ($)',
+              data: principalYearly,
+              backgroundColor: '#10b981'
+            },
+            {
+              label: 'Cumulative Interest Paid ($)',
+              data: interestYearly,
+              backgroundColor: '#ef4444'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+              }
+            }
+          },
+          scales: {
+            x: { stacked: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+            y: { 
+              stacked: true, 
+              grid: { color: '#334155' }, 
+              ticks: { 
+                color: '#94a3b8',
+                callback: (val) => '$' + val.toLocaleString()
+              } 
+            }
+          }
+        }
+      });
+
+      // 3. Donut Chart
+      if (donutChartInstance) donutChartInstance.destroy();
+      const ctxDonut = document.getElementById('donutChart').getContext('2d');
+      donutChartInstance = new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: {
+          labels: ['Total Principal Borrowed', 'Total Interest Paid'],
+          datasets: [{
+            data: [loanData.summary.totalPrincipal, loanData.summary.totalInterest],
+            backgroundColor: ['#10b981', '#ef4444'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.raw)} (${((ctx.raw / loanData.summary.totalCost) * 100).toFixed(1)}%)`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function switchChartTab(tab) {
+      currentChartTab = tab;
+      ['monthly', 'cumulative', 'donut'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const container = document.getElementById(`chart-container-${t}`);
+
+        if (t === tab) {
+          btn.className = 'px-3 py-1.5 rounded-md font-medium text-white bg-brand-600 transition';
+          container.classList.remove('hidden');
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition';
+          container.classList.add('hidden');
+        }
+      });
+    }
+
+    function setTableViewMode(mode) {
+      currentTableMode = mode;
+      document.getElementById('table-mode-yearly').className = mode === 'yearly' 
+        ? 'px-3 py-1.5 rounded-md font-medium text-white bg-slate-800 transition' 
+        : 'px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition';
+      
+      document.getElementById('table-mode-monthly').className = mode === 'monthly' 
+        ? 'px-3 py-1.5 rounded-md font-medium text-white bg-slate-800 transition' 
+        : 'px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition';
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('amortization-table-body');
+      tbody.innerHTML = '';
+
+      const dataList = currentTableMode === 'yearly' ? loanData.yearlySchedule : loanData.schedule;
+      const search = document.getElementById('table-search').value.toLowerCase();
+
+      dataList.forEach(item => {
+        const periodText = currentTableMode === 'yearly' ? `Year ${item.year}` : `Month ${item.month} (Yr ${item.year})`;
+        if (search && !periodText.toLowerCase().includes(search)) return;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition border-b border-slate-800/40';
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 font-semibold text-white">${periodText}</td>
+          <td class="py-2.5 px-4 text-right">${formatCurrency(item.payment)}</td>
+          <td class="py-2.5 px-4 text-right text-emerald-400 font-semibold">${formatCurrency(item.principal)}</td>
+          <td class="py-2.5 px-4 text-right text-red-400 font-semibold">${formatCurrency(item.interest)}</td>
+          <td class="py-2.5 px-4 text-right text-slate-400">${formatCurrency(item.totalInterest)}</td>
+          <td class="py-2.5 px-4 text-right text-white font-bold">${formatCurrency(item.balance)}</td>
+          <td class="py-2.5 px-4">
+            <div class="flex items-center gap-2">
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full" style="width: ${item.progressPercent.toFixed(1)}%"></div>
+              </div>
+              <span class="text-[10px] text-slate-400 w-8 text-right">${item.progressPercent.toFixed(0)}%</span>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTable() {
+      renderTable();
+    }
+
+    function toggleEducationalModal() {
+      const modal = document.getElementById('educational-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    function formatCurrency(val) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+    }
+
+    function exportCSV() {
+      let csv = 'Period,Payment,Principal,Interest,Total Interest Paid,Remaining Balance\n';
+      loanData.schedule.forEach(i => {
+        csv += `Month ${i.month},${i.payment.toFixed(2)},${i.principal.toFixed(2)},${i.interest.toFixed(2)},${i.totalInterest.toFixed(2)},${i.balance.toFixed(2)}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `Amortization_Schedule_${document.getElementById('loan-amount').value}.csv`);
+      a.click();
+    }
+  </script>
+</body>
+</html>
