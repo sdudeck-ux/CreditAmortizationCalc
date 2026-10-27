@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amortization Visualizer - Advanced Educational Loan Calculator</title>
+  <title>Amortization Visualizer - Educational Loan Calculator</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js for visualizations -->
@@ -85,17 +85,17 @@
         <div>
           <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             Amortization Visualizer
-            <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Classroom & Strategy Edition</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Classroom Edition</span>
           </h1>
           <p class="text-xs text-slate-400">Understanding Interest vs. Principal Paydown over time</p>
         </div>
       </div>
       
       <div class="flex items-center gap-3">
-        <button onclick="toggleEducationalModal()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+        <button type="button" onclick="toggleEducationalModal()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2">
           <i class="fa-solid fa-graduation-cap text-amber-400"></i> Key Concepts & Glossary
         </button>
-        <button onclick="exportCSV()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition flex items-center gap-2">
+        <button type="button" onclick="exportCSV()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition flex items-center gap-2">
           <i class="fa-solid fa-file-csv"></i> Export Table (CSV)
         </button>
       </div>
@@ -128,7 +128,7 @@
                 <input type="number" id="loan-amount" value="427500" min="1" max="999999999" step="0.01" required
                        class="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-sm">
               </div>
-              <input type="range" id="loan-amount-range" min="1000" max="1000000" step="5000" value="427500" class="w-full mt-2 accent-brand-500 bg-slate-800">
+              <input type="range" id="loan-amount-range" min="1000" max="1000000" step="1000" value="427500" class="w-full mt-2 accent-brand-500 bg-slate-800">
             </div>
 
             <!-- Interest Rate APR -->
@@ -377,13 +377,13 @@
             
             <!-- Chart Toggle Tabs -->
             <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
-              <button onclick="switchChartTab('monthly')" id="tab-btn-monthly" class="px-3 py-1.5 rounded-md font-medium text-white bg-brand-600 transition">
+              <button type="button" onclick="switchChartTab('monthly')" id="tab-btn-monthly" class="px-3 py-1.5 rounded-md font-medium text-white bg-brand-600 transition">
                 Monthly Breakdown (Area)
               </button>
-              <button onclick="switchChartTab('cumulative')" id="tab-btn-cumulative" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
+              <button type="button" onclick="switchChartTab('cumulative')" id="tab-btn-cumulative" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
                 Cumulative Growth (Bar)
               </button>
-              <button onclick="switchChartTab('donut')" id="tab-btn-donut" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
+              <button type="button" onclick="switchChartTab('donut')" id="tab-btn-donut" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
                 Total Share (Donut)
               </button>
             </div>
@@ -431,10 +431,10 @@
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <!-- View Toggle: Annual vs Monthly -->
           <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
-            <button onclick="setTableViewMode('yearly')" id="table-mode-yearly" class="px-3 py-1.5 rounded-md font-medium text-white bg-slate-800 transition">
+            <button type="button" onclick="setTableViewMode('yearly')" id="table-mode-yearly" class="px-3 py-1.5 rounded-md font-medium text-white bg-slate-800 transition">
               Group by Year
             </button>
-            <button onclick="setTableViewMode('monthly')" id="table-mode-monthly" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
+            <button type="button" onclick="setTableViewMode('monthly')" id="table-mode-monthly" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition">
               All Months
             </button>
           </div>
@@ -474,7 +474,7 @@
   <!-- Educational Glossary Modal -->
   <div id="educational-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <button onclick="toggleEducationalModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+      <button type="button" onclick="toggleEducationalModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
         <i class="fa-solid fa-xmark"></i>
       </button>
 
@@ -517,7 +517,7 @@
       </div>
 
       <div class="mt-6 pt-4 border-t border-slate-800 text-right">
-        <button onclick="toggleEducationalModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold">
+        <button type="button" onclick="toggleEducationalModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold">
           Got It! Back to Visualizer
         </button>
       </div>
@@ -550,7 +550,7 @@
     let currentTableMode = 'yearly';
 
     window.addEventListener('DOMContentLoaded', () => {
-      // Input event listeners for live dynamic syncing
+      // Bind input events
       const loanInput = document.getElementById('loan-amount');
       const rangeInput = document.getElementById('loan-amount-range');
 
@@ -573,6 +573,7 @@
       document.getElementById('lump-sum-amount').addEventListener('input', calculateLoan);
       document.getElementById('lump-sum-month').addEventListener('input', calculateLoan);
 
+      // Perform initial calculation on load
       calculateLoan();
     });
 
@@ -588,16 +589,18 @@
       const extraMonthly = parseFloat(document.getElementById('extra-payment').value) || 0;
       const lumpSum = parseFloat(document.getElementById('lump-sum-amount').value) || 0;
       const lumpSumMonth = parseInt(document.getElementById('lump-sum-month').value) || 0;
-      const scheduleType = document.querySelector('input[name="payment-schedule"]:checked').value;
+      
+      const scheduleRadio = document.querySelector('input[name="payment-schedule"]:checked');
+      const scheduleType = scheduleRadio ? scheduleRadio.value : 'monthly';
 
       if (principal <= 0 || annualRate <= 0 || years <= 0) return;
 
-      // Format displays
+      // Update Header Text displays
       document.getElementById('amount-display').innerText = formatCurrency(principal);
       document.getElementById('rate-display').innerText = annualRate.toFixed(2) + '%';
       document.getElementById('term-display').innerText = years + ' Years';
 
-      // 1. Compute Base Loan (without extra payments) for comparison
+      // 1. Compute Base Loan
       const baseMonthlyRate = (annualRate / 100) / 12;
       const baseTotalMonths = years * 12;
       const baseMonthlyPayment = (principal * baseMonthlyRate * Math.pow(1 + baseMonthlyRate, baseTotalMonths)) / 
@@ -620,12 +623,10 @@
       let cumulativePrincipalPaid = 0;
       let tippingPointMonth = null;
 
-      // Adjust monthly equivalent if biweekly selected
       let regularMonthlyPayment = baseMonthlyPayment;
       let monthlyContribution = regularMonthlyPayment;
       
       if (scheduleType === 'biweekly') {
-        // Bi-weekly pays 26 half-payments per year = 13 monthly payments annually
         monthlyContribution = (regularMonthlyPayment * 13) / 12;
       }
 
@@ -643,14 +644,12 @@
 
         let totalPaymentThisMonth = monthlyContribution + extraMonthly;
 
-        // Apply One-Time Lump Sum
         if (month === lumpSumMonth && lumpSum > 0) {
           totalPaymentThisMonth += lumpSum;
         }
 
         let principalPayment = totalPaymentThisMonth - interestPayment;
 
-        // Handle final payment edge case
         if (principalPayment >= balance) {
           principalPayment = balance;
           totalPaymentThisMonth = principalPayment + interestPayment;
@@ -800,7 +799,6 @@
       const schedule = loanData.schedule;
       const yearly = loanData.yearlySchedule;
 
-      // Sample data for monthly chart performance
       const step = Math.max(1, Math.floor(schedule.length / 60));
       const sampledSchedule = schedule.filter((item, index) => index % step === 0 || index === schedule.length - 1);
 
@@ -808,7 +806,7 @@
       const interestMonthly = sampledSchedule.map(i => i.interest);
       const principalMonthly = sampledSchedule.map(i => i.principal);
 
-      // 1. Monthly Stacked Area Chart
+      // 1. Monthly Area Chart
       if (monthlyChartInstance) monthlyChartInstance.destroy();
       const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
       monthlyChartInstance = new Chart(ctxMonthly, {
